@@ -1,53 +1,51 @@
 {
   lib,
   stdenv,
-  dockapps-sources,
   libX11,
   libXpm,
   libXext,
-  libdockapp,
+  pkg-config,
+  fetchurl
 }:
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = "wmsm.app";
+  pname = "wmsm-app";
+  version = "0.2.1";
 
-  inherit (dockapps-sources) version src;
+  src = fetchurl {
+    url = "https://www.dockapps.net/download/wmsm.app-${finalAttrs.version}.tar.bz2";
+    hash = "sha256-NpqPLlZzxrerDPhRZvOPv1U92WbDwc/uwOMoN979Msc=";
+  };
 
-  sourceRoot = "${finalAttrs.src.name}/wmsm.app/wmsm";
+  nativeBuildInputs = [ pkg-config ];
 
-  buildInputs = [
-    libX11
-    libXext
-    libXpm
-    libdockapp
+  buildInputs = [ 
+    libX11 
+    libXpm 
+    libXext 
   ];
 
-  env.NIX_CFLAGS_COMPILE = "-std=gnu89";
-
-  postPatch = ''
-    substituteInPlace Makefile \
-      --replace "PREFIX	= /usr/X11R6/bin" "" \
-      --replace "/usr/bin/install" "install"
-  '';
-
-  makeFlags = [
-    "CC=${stdenv.cc.targetPrefix}cc"
+  #Settings to fix build errors due to it being legacy code
+  NIX_CFLAGS_COMPILE = [
+    "-fcommon" 
+    "-fgnu89-inline"
+    "-I../wmgenral"
   ];
+
+  sourceRoot = "wmsm.app-${finalAttrs.version}/wmsm";
 
   installPhase = ''
     runHook preInstall
-    install -d ${placeholder "out"}/bin
+    install -Dm755 wmsm $out/bin/wmsm
     runHook postInstall
   '';
 
-  installFlags = [
-    "PREFIX=${placeholder "out"}/bin"
-  ];
-
   meta = {
-    description = "System monitor for Windowmaker";
+    description = "WindowMaker System Monitor";
     homepage = "https://www.dockapps.net/wmsmapp";
     license = lib.licenses.gpl2Plus;
-    maintainers = [ ];
+    platforms = lib.platforms.linux;
+    maintainers = [ "Stormtroppy" ];
+    mainProgram = "wmsm";
   };
 })
